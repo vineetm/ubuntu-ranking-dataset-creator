@@ -5,7 +5,7 @@ import random
 from six.moves import urllib
 import tarfile
 import csv
-
+import logging
 import nltk
 from nltk.stem import SnowballStemmer, WordNetLemmatizer
 
@@ -84,7 +84,7 @@ def get_random_utterances_from_corpus(candidate_dialog_paths,rng,utterances_num=
         # we do not count the last  _dialog_end__ urn
         dialog_len = len(dialog) - 1
         if(dialog_len<min_turn):
-            print "Dialog {} was shorter than the minimum required lenght {}".format(dialog_path,dialog_len)
+            logging.info("Dialog {} was shorter than the minimum required lenght {}".format(dialog_path,dialog_len))
             exit()
         # sample utterance, exclude the last round that is always "dialog end"
         max_ix = min(max_turn, dialog_len) - 1
@@ -200,7 +200,7 @@ def create_examples_train(candidate_dialog_paths, rng, positive_probability=0.5,
     examples = []
     for context_dialog in candidate_dialog_paths:
         if i % 1000 == 0:
-            print str(i)
+            logging.info('train: %d'%str(i))
         dialog_path = candidate_dialog_paths[i]
         examples.append(create_single_dialog_train_example(dialog_path, candidate_dialog_paths, rng, positive_probability,
                                                            max_context_length=max_context_length))
@@ -222,7 +222,7 @@ def create_examples(candidate_dialog_paths, examples_num, creator_function):
         context_dialog = candidate_dialog_paths[i % unique_dialogs_num]
         # counter for tracking progress
         if i % 1000 == 0:
-            print str(i)
+            logging.info(str(i))
         i+=1
 
         examples.append(creator_function(context_dialog, candidate_dialog_paths))
@@ -256,16 +256,16 @@ def prepare_data_maybe_download(directory):
     archive_path = os.path.join(directory,filename)
     if not os.path.exists(archive_path):
         # archive missing, download it
-        print("Downloading %s to %s" % (url, archive_path))
+        logging.info("Downloading %s to %s" % (url, archive_path))
         filepath, _ = urllib.request.urlretrieve(url, archive_path)
-        print "Successfully downloaded " + filepath
+        logging.info("Successfully downloaded " + filepath)
 
     # unpack data
     if not os.path.exists(dialogs_path):
-          print("Unpacking dialogs ...")
+          logging.info("Unpacking dialogs ...")
           with tarfile.open(archive_path) as tar:
                 tar.extractall(path=directory)
-          print("Archive unpacked.")
+          logging.info("Archive unpacked.")
 
     return
 
@@ -274,7 +274,7 @@ def prepare_data_maybe_download(directory):
 #####################################################################################
 
 if __name__ == '__main__':
-
+    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
     def create_eval_dataset(args, file_list_csv):
         rng = random.Random(args.seed)
@@ -310,7 +310,7 @@ if __name__ == '__main__':
                 translated_row = map(lambda x: " ".join(x), translated_row)
 
             w.writerow(translated_row)
-        print("Dataset stored in: {}".format(args.output))
+        logging.info("Dataset stored in: {}".format(args.output))
 
 
     def train_cmd(args):
@@ -349,7 +349,7 @@ if __name__ == '__main__':
                 translated_row.append(int(float(row[2])))
 
             w.writerow(translated_row)
-        print("Train dataset stored in: {}".format(args.output))
+        logging.info("Train dataset stored in: {}".format(args.output))
 
     def valid_cmd(args):
         create_eval_dataset(args, "valfiles.csv")
